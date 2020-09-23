@@ -18,7 +18,7 @@
   import axios from 'axios'
 
   export default {
-    name: 'Comments',
+    name: 'Posts',
     data () {
       return {
         posts: []

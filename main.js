@@ -1,8 +1,8 @@
-import Comments from './Comments'
+import Posts from './Posts'
 
 document.addEventListener('datashare:ready', async ({ detail }) => {
   detail.core.registerHook({
     target: 'document.content:after',
-    definition: Comments
+    definition: Posts
   })
 }, false)
