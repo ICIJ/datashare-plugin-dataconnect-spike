@@ -25,12 +25,15 @@
       }
     },
     async mounted () {
-      const url = new URL('/discourse/t/11/posts.json', `${window.location.protocol}//${window.location.host}`)
+      let pathFragments = window.location.hash.split("/"); // #/d/index/docid/routing
+      let index = pathFragments[2]
+      let docId = pathFragments[3]
+      const url = new URL(`/comments/${index}/${docId}/all`, `${window.location.protocol}//${window.location.host}`)
       axios.get(url.href)
         .then(response => {
           this.$set(this, 'posts', response.data.post_stream.posts)
         })
-        .catch(_ => console.log('error'))
+        .catch(e => console.log('error', e))
     }
   }
 </script>
