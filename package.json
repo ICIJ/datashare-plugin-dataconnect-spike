@@ -2,16 +2,20 @@
   "name": "datashare-plugin-dataconnect",
   "description": "A Datashare plugin to create DataConnect, a bridge between Datashare and iHub",
   "version": "0.0.0",
-  "main": "dist/index.umd.min.js",
-  "dependencies": {},
+  "main": "dist/index.umd.js",
+  "dependencies": {
+    "axios": "^0.20.0"
+  },
   "devDependencies": {
     "@vue/cli": "^4.2.3",
     "@vue/cli-service-global": "^4.2.3",
     "geckodriver": "^1.19.1",
-    "nightwatch": "^1.3.4"
+    "nightwatch": "^1.3.4",
+    "node-sass": "^4.14.1",
+    "sass-loader": "^10.0.2"
   },
   "private": false,
-  "datashare": { },
+  "datashare": {},
   "scripts": {
     "test:e2e": "nightwatch",
     "test:pack": "mkdir -p ./tmp && cat \"$(npm pack)\" | tar zxvf - -C ./tmp",
