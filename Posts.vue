@@ -51,7 +51,7 @@ export default {
         "WNIoGrntoUmx7dHDf19nNcA1NSBZsW9mmn272JeZtg1Ux1pLgKHw\n" +
         "-----END RSA PRIVATE KEY-----\n"
     const publicKey = encodeURIComponent(key)
-    const authRedirect = encodeURIComponent('http://localhost:8888/')
+    const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
     const discourseUrl = 'http://localhost:3000/user-api-key/new'
     const clientId = encodeURIComponent('alhote')
     const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
