@@ -23,6 +23,9 @@ export default {
     }
   },
   async mounted() {
+    const discourseUrl = 'http://localhost:3000/user-api-key/new'
+    const clientId = encodeURIComponent('alhote')
+    const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
     const key = "-----BEGIN RSA PRIVATE KEY-----\n" +
         "MIIEowIBAAKCAQEA4Uf9iQqFcLv7wLL1fYar7copOalXIcjAksmfH2/1j+a1ewCk\n" +
         "WEK/yjtwUtmL3dFg0l/GAAZRz8kYekc+BDoNsKBw52e9wIbHeQPgnlYjsk655amF\n" +
@@ -51,9 +54,6 @@ export default {
         "WNIoGrntoUmx7dHDf19nNcA1NSBZsW9mmn272JeZtg1Ux1pLgKHw\n" +
         "-----END RSA PRIVATE KEY-----\n"
     const publicKey = encodeURIComponent(key)
-    const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
-    const discourseUrl = 'http://localhost:3000/user-api-key/new'
-    const clientId = encodeURIComponent('alhote')
     const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
     window.location.href = url
   }
