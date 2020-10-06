@@ -15,8 +15,6 @@
 </template>
 
 <script>
-import axios from 'axios'
-
 export default {
   name: 'Posts',
   data() {
@@ -25,7 +23,7 @@ export default {
     }
   },
   async mounted() {
-    const rsa = "-----BEGIN RSA PRIVATE KEY-----\n" +
+    const key = "-----BEGIN RSA PRIVATE KEY-----\n" +
         "MIIEowIBAAKCAQEA4Uf9iQqFcLv7wLL1fYar7copOalXIcjAksmfH2/1j+a1ewCk\n" +
         "WEK/yjtwUtmL3dFg0l/GAAZRz8kYekc+BDoNsKBw52e9wIbHeQPgnlYjsk655amF\n" +
         "Z5eQWWF7j2EnrfwssiF8o0lp82/DYY+pqTz61zamgXB7oLh/81V0Og94C7Bcdi4N\n" +
@@ -52,12 +50,12 @@ export default {
         "cal2LTjq2uPSStjlyaO8JHzBFVT8gUhOHPzgw7a/sHZ/qrP8kfrh68sypEOVe1+H\n" +
         "WNIoGrntoUmx7dHDf19nNcA1NSBZsW9mmn272JeZtg1Ux1pLgKHw\n" +
         "-----END RSA PRIVATE KEY-----\n"
-    const rsa_encoded = encodeURIComponent(rsa)
-    const redirect_url = encodeURIComponent('http://127.0.0.1:8888/discourse')
-    const url = new URL(`http://127.0.0.1:3000/user-api-key/new?application_name=dataconnect&client_id=foo&scopes=write&nonce=bar&auth_redirect=${redirect_url}&public_key=${rsa_encoded}`);
-    console.log(url)
-    await axios.get(url.href);
-    //this.$set(this, 'posts', response.data.post_stream.posts)
+    const publicKey = encodeURIComponent(key)
+    const authRedirect = encodeURIComponent('http://localhost:8888/')
+    const discourseUrl = 'http://localhost:3000/user-api-key/new'
+    const clientId = encodeURIComponent('alhote')
+    const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
+    window.location.href = url
   }
 }
 </script>
