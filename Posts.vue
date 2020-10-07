@@ -16,6 +16,7 @@
 
 <script>
 import { JSEncrypt } from 'jsencrypt'
+import axios from 'axios'
 
 export default {
   name: 'Posts',
@@ -58,14 +59,20 @@ export default {
       const urlDecodedPayload = decodeURIComponent(payload[1])
       const decrypt = new JSEncrypt()
       decrypt.setPrivateKey(key)
-      const unencrypted = decrypt.decrypt(urlDecodedPayload)
-      console.log(unencrypted)
+      const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
+      const userApiKey = JSON.parse(decryptedPayload).key
+      try {
+        const response = await axios.get('http://localhost:3000/t/11/posts.json', { headers: { 'User-Api-Key': userApiKey } })
+        this.$set(this, 'posts', response.data.post_stream.posts)
+      } catch (error) {
+        console.log(error)
+      }
     } else {
       const discourseUrl = 'http://localhost:3000/user-api-key/new'
       const clientId = encodeURIComponent('alhote')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(key)
-      const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
+      const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
       window.location.href = url
     }
   }
