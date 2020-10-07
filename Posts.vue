@@ -15,6 +15,7 @@
 </template>
 
 <script>
+
 export default {
   name: 'Posts',
   data() {
@@ -26,7 +27,10 @@ export default {
     const re = new RegExp(/payload=(.*)#/)
     const payload = window.location.href.match(re)
     if (payload) {
-      console.log(payload[1])
+      const decodedPayload = decodeURIComponent(payload[1])
+      const encryptedInfo = atob(decodedPayload)
+
+
 
     } else {
       const discourseUrl = 'http://localhost:3000/user-api-key/new'
@@ -66,3 +70,9 @@ export default {
   }
 }
 </script>
+
+<!-- {"key":"bbdd00cb1be0dd8028131c48624a3edd","nonce":"bar","push":false,"api":4} -->
+
+<!-- VwVlemM47iKxgOTIJPbmcvz%2FZXUx9VYkdZL3tADrQFCWrzO2P6EUczaViE1u%0AdjDkZV5Gh5VIC5S4FXuV%2FjgVuibEVwAqdQ0tte68o2%2BsBqMODaHwnZEL4iKr%0AjCtWggVECdoHS%2FJk%2FyFaQjtlpdjW9o3esrsSUJuPveCt57tc7X0sX3bNUzXE%0AL7LQ4KaiAnQpm9tGW%2B90SpX3JpExffZqIwEUJSUt6RWfStVXN3nApfNigAFV%0AkDftjMpOyz27XUSAh4ROGEuQGcwOAi53onmcvtCvj0EHcdb7a2CjcJCehbsh%0AWxFvVvIsaO7sbKy3zLuCb8IcSxNWRHor9fckyRZl%2Bg%3D%3D%0A -->
+
+<!-- http://localhost:8888/?payload=VwVlemM47iKxgOTIJPbmcvz%2FZXUx9VYkdZL3tADrQFCWrzO2P6EUczaViE1u%0AdjDkZV5Gh5VIC5S4FXuV%2FjgVuibEVwAqdQ0tte68o2%2BsBqMODaHwnZEL4iKr%0AjCtWggVECdoHS%2FJk%2FyFaQjtlpdjW9o3esrsSUJuPveCt57tc7X0sX3bNUzXE%0AL7LQ4KaiAnQpm9tGW%2B90SpX3JpExffZqIwEUJSUt6RWfStVXN3nApfNigAFV%0AkDftjMpOyz27XUSAh4ROGEuQGcwOAi53onmcvtCvj0EHcdb7a2CjcJCehbsh%0AWxFvVvIsaO7sbKy3zLuCb8IcSxNWRHor9fckyRZl%2Bg%3D%3D%0A#/d/local-datashare/895031cbf227ce2514ed4c7b532d329b52ea35e56246ca417803b838e3cdeef62970eed707d97dd208202472afb57fae/895031cbf227ce2514ed4c7b532d329b52ea35e56246ca417803b838e3cdeef62970eed707d97dd208202472afb57fae?q= -->
