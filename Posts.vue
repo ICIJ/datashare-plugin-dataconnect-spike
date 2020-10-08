@@ -26,6 +26,7 @@ export default {
     }
   },
   async mounted () {
+    const discourseHost = 'http://localhost:3000/'
     const re = new RegExp(/payload=(.*)#/)
     const payload = window.location.href.match(re)
     const key = "-----BEGIN RSA PRIVATE KEY-----\n" +
@@ -62,18 +63,17 @@ export default {
       const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
       const userApiKey = JSON.parse(decryptedPayload).key
       try {
-        const response = await axios.get('http://localhost:3000/t/11/posts.json', { headers: { 'User-Api-Key': userApiKey } })
+        const response = await axios.get(`${discourseHost}t/11/posts.json`, { headers: { 'User-Api-Key': userApiKey } })
         this.$set(this, 'posts', response.data.post_stream.posts)
       } catch (error) {
         console.log(error)
       }
     } else {
-      const discourseUrl = 'http://localhost:3000/user-api-key/new'
+      const discourseUrl = `${discourseHost}user-api-key/new`
       const clientId = encodeURIComponent('alhote')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(key)
-      const url = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
-      window.location.href = url
+      window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
     }
   }
 }
