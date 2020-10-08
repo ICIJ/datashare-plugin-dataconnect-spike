@@ -51,7 +51,7 @@
         try {
           await axios.put(
               new URL(`/comments/${index}/${docId}`, `${window.location.protocol}//${window.location.host}`).href,
-              {"content": this.comment})
+              {"title": "Datashare document number " + docId.substring(0, 6), "raw": this.comment})
         } catch (e )  {
           console.log('error', e)
         }
