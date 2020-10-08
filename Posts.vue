@@ -38,7 +38,7 @@
       const url = new URL(`/comments/${index}/${docId}/all`, `${window.location.protocol}//${window.location.host}`)
       try {
         const resp = await axios.get(url.href)
-        this.$set(this, 'posts', resp.data.post_stream.posts)
+        this.$set(this, 'posts', resp.data.topic_view_posts.post_stream.posts)
       } catch (e ) {
         console.log('error', e)
       }
