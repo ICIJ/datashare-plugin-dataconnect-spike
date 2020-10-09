@@ -17,6 +17,7 @@
 <script>
 import { JSEncrypt } from 'jsencrypt'
 import axios from 'axios'
+import filter from 'lodash/filter'
 
 export default {
   name: 'Posts',
@@ -63,17 +64,42 @@ export default {
       const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
       const userApiKey = JSON.parse(decryptedPayload).key
       try {
-        const response = await axios.get(`${discourseHost}t/11/posts.json`, { headers: { 'User-Api-Key': userApiKey } })
-        this.$set(this, 'posts', response.data.post_stream.posts)
+        const response = await axios.get(`${discourseHost}site.json`, { headers: { 'User-Api-Key': userApiKey } })
+        const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
+
+        let ihubProjects = response.data.groups
+
+        let projectExists = filter(ihubProjects, function(p) {
+          return p.name === currentDsProject
+        })
+
+        let createProject
+        if (projectExists.length === 0) {
+          const data = new FormData()
+          data.append("group[name]", currentDsProject)
+          data.append("group[visibility_level]", "1")
+
+          createProject = await axios.post(`${discourseHost}admin/groups`, data, {
+            headers: {
+              'User-Api-Key': userApiKey,
+              'Content-Type': 'multipart/form-data;'
+            }
+          })
+        }
+
+        if (projectExists.length === 1 || (createProject.status === 200)) {
+          console.log("yay!");
+        }
+
       } catch (error) {
         console.log(error)
       }
     } else {
       const discourseUrl = `${discourseHost}user-api-key/new`
-      const clientId = encodeURIComponent('alhote')
+      const clientId = encodeURIComponent('moleary')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(key)
-      window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
+      window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read,write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
     }
   }
 }
