@@ -123,7 +123,65 @@ export default {
           }
 
           if (categoryExists.length === 1 || createCategory.status === 200) {
-            console.log("yay!");
+            // get Datashare Documents category id
+            let categories = await axios.get(`${discourseHost}categories.json`, {
+              headers: {
+                'User-Api-Key': userApiKey
+              }
+            })
+
+            categories = categories.data.category_list.categories
+
+            let category = filter(categories, function(o) {
+              return ((o.name === "Datashare Documents") && (o.icij_projects_for_category[0] === currentDsProject))
+            })
+
+            category = category[0].id
+
+            let topics = await axios.get(`${discourseHost}c/${category}.json`, {
+              headers: {
+                'User-Api-Key': userApiKey
+              }
+            })
+
+            topics = topics.data.topic_list.topics
+
+            const documentId =  this.$store.state.document.idAndRouting.id
+
+            let topicExists = filter(topics, function(o) {
+              return o.datashare_document_id === documentId
+            })
+
+            let createTopic
+            if (topicExists.length === 0) {
+              const data = new FormData()
+              data.append("raw", "trying to add a new topic from dataconnect")
+              data.append("title", `Datashare document ${documentId.substring(0,7)}`)
+              data.append("category", category.toString())
+              data.append("archetype", "regular")
+              data.append("datashare_document_id", documentId)
+
+              createTopic = await axios.post(`${discourseHost}posts.json`, data, {
+                headers: {
+                  'User-Api-Key': userApiKey,
+                  'Content-Type': 'x-www-form-urlencoded;'
+                }
+              })
+            }
+
+            if (topicExists.length === 1 || createTopic.status === 200) {
+
+              let topicId
+              if (createTopic) {
+                topicId = createTopic.data.id
+              } else {
+                topicId = topicExists[0].id
+              }
+
+              let setPosts = await axios.get(`${discourseHost}t/${topicId}/posts.json`, { headers: { 'User-Api-Key': userApiKey } })
+              this.$set(this, 'posts', setPosts.data.post_stream.posts)
+
+            }
           }
         }
 
