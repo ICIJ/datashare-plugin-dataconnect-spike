@@ -88,7 +88,43 @@ export default {
         }
 
         if (projectExists.length === 1 || (createProject.status === 200)) {
-          console.log("yay!");
+          let categoriesList = await axios.get(`${discourseHost}categories.json`, {
+            headers: {
+              'User-Api-Key': userApiKey
+            }
+          })
+
+          categoriesList = categoriesList.data.category_list.categories
+
+          // filter for one with specific name + project permissions
+          let categoryExists = filter(categoriesList, function(o) {
+            return ((o.name === "Datashare Documents") && (o.icij_projects_for_category[0] === currentDsProject))
+          })
+
+          let createCategory
+          if (categoryExists.length === 0) {
+            const data = new FormData()
+            data.append("name", "Datashare Documents")
+            data.append(`permissions[${currentDsProject}]`, "1")
+            data.append("color", "BF1E2E")
+            data.append("text_color", "FFFFFF")
+            data.append("allow_badges", "true")
+            data.append("required_tag_group_name", "")
+            data.append("topic_featured_link_allowed", "true")
+            data.append("search_priority", "0")
+
+            // if it does not exist, create it
+            createCategory = await axios.post(`${discourseHost}categories.json`, data, {
+              headers: {
+                'User-Api-Key': userApiKey,
+                'Content-Type': 'x-www-form-urlencoded;'
+              }
+            })
+          }
+
+          if (categoryExists.length === 1 || createCategory.status === 200) {
+            console.log("yay!");
+          }
         }
 
       } catch (error) {
