@@ -98,7 +98,7 @@ export default {
 
           // filter for one with specific name + project permissions
           let categoryExists = filter(categoriesList, function(o) {
-            return ((o.name === "Datashare Documents") && (o.icij_projects_for_category[0] === currentDsProject))
+            return ((o.name === `Datashare Documents for ${currentDsProject}`) && (o.icij_projects_for_category[0] === currentDsProject))
           })
 
           let createCategory
@@ -173,7 +173,7 @@ export default {
 
               let topicId
               if (createTopic) {
-                topicId = createTopic.data.id
+                topicId = createTopic.data.topic_id
               } else {
                 topicId = topicExists[0].id
               }
