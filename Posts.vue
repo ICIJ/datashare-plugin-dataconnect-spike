@@ -47,7 +47,7 @@ export default {
     if (payload) {
       const urlDecodedPayload = decodeURIComponent(payload[1])
       const decrypt = new JSEncrypt()
-      decrypt.setPrivateKey(exportedPrivateKey)
+      decrypt.setPrivateKey(this.toPem(exportedPrivateKey))
       const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
       const userApiKey = JSON.parse(decryptedPayload).key
       try {
