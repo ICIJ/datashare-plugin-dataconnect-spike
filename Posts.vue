@@ -1,5 +1,12 @@
 <template>
   <div class="posts p-3">
+    <div class="posts__actions">
+      <div class="posts__actions__form-group">
+        <textarea class="posts__actions__form-group-textarea form-control rounded-0" v-model="comment"
+                  placeholder="new comment"></textarea>
+        <button class="posts__actions__form-group__create btn btn-primary" @click="createComment()">Create</button>
+      </div>
+    </div>
     <div v-for="post in posts" :key="post.id" class="posts__post">
       <div class="posts__post__header row">
         <div class="posts__post__header__author col-6 font-weight-bold">
@@ -21,13 +28,15 @@ import {JSEncrypt} from 'jsencrypt'
 
 export default {
   name: 'Posts',
-  data () {
+  data() {
     return {
-      posts: []
+      posts: [],
+      comment: "",
+      axiosConfig: null,
+      discourseHost: 'http://localhost:3000/'
     }
   },
-  async mounted () {
-    const discourseHost = 'http://localhost:3000/'
+  async mounted() {
     const re = new RegExp(/payload=(.*)#/)
     const payload = window.location.href.match(re)
 
@@ -59,133 +68,15 @@ export default {
       decrypt.setPrivateKey(pemPrivateKey)
       const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
       const userApiKey = JSON.parse(decryptedPayload).key
-      try {
-        const response = await axios.get(`${discourseHost}site.json`, { headers: { 'User-Api-Key': userApiKey } })
-        const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
+      this.$set(this, "axiosConfig", {headers: {'User-Api-Key': userApiKey}});
 
-        let ihubProjects = response.data.groups
-
-        let projectExists = filter(ihubProjects, function(p) {
-          return p.name === currentDsProject
-        })
-
-        let createProject
-        if (projectExists.length === 0) {
-          const data = new FormData()
-          data.append("group[name]", currentDsProject)
-          data.append("group[visibility_level]", "1")
-
-          createProject = await axios.post(`${discourseHost}admin/groups`, data, {
-            headers: {
-              'User-Api-Key': userApiKey,
-              'Content-Type': 'multipart/form-data;'
-            }
-          })
-        }
-
-        if (projectExists.length === 1 || (createProject.status === 200)) {
-          let categoriesList = await axios.get(`${discourseHost}categories.json`, {
-            headers: {
-              'User-Api-Key': userApiKey
-            }
-          })
-
-          categoriesList = categoriesList.data.category_list.categories
-
-          // filter for one with specific name + project permissions
-          let categoryExists = filter(categoriesList, function(o) {
-            return ((o.name === `Datashare Documents for ${currentDsProject}`) && (o.icij_projects_for_category[0] === currentDsProject))
-          })
-
-          let createCategory
-          if (categoryExists.length === 0) {
-            const data = new FormData()
-            data.append("name", "Datashare Documents")
-            data.append(`permissions[${currentDsProject}]`, "1")
-            data.append("color", "BF1E2E")
-            data.append("text_color", "FFFFFF")
-            data.append("allow_badges", "true")
-            data.append("required_tag_group_name", "")
-            data.append("topic_featured_link_allowed", "true")
-            data.append("search_priority", "0")
-
-            // if it does not exist, create it
-            createCategory = await axios.post(`${discourseHost}categories.json`, data, {
-              headers: {
-                'User-Api-Key': userApiKey,
-                'Content-Type': 'x-www-form-urlencoded;'
-              }
-            })
-          }
-
-          if (categoryExists.length === 1 || createCategory.status === 200) {
-            // get Datashare Documents category id
-            let categories = await axios.get(`${discourseHost}categories.json`, {
-              headers: {
-                'User-Api-Key': userApiKey
-              }
-            })
-
-            categories = categories.data.category_list.categories
-
-            let category = filter(categories, function(o) {
-              return ((o.name === "Datashare Documents") && (o.icij_projects_for_category[0] === currentDsProject))
-            })
-
-            category = category[0].id
-
-            let topics = await axios.get(`${discourseHost}c/${category}.json`, {
-              headers: {
-                'User-Api-Key': userApiKey
-              }
-            })
-
-            topics = topics.data.topic_list.topics
-
-            const documentId =  this.$store.state.document.idAndRouting.id
-
-            let topicExists = filter(topics, function(o) {
-              return o.datashare_document_id === documentId
-            })
-
-            let createTopic
-            if (topicExists.length === 0) {
-              const data = new FormData()
-              data.append("raw", "trying to add a new topic from dataconnect")
-              data.append("title", `Datashare document ${documentId.substring(0,7)}`)
-              data.append("category", category.toString())
-              data.append("archetype", "regular")
-              data.append("datashare_document_id", documentId)
-
-              createTopic = await axios.post(`${discourseHost}posts.json`, data, {
-                headers: {
-                  'User-Api-Key': userApiKey,
-                  'Content-Type': 'x-www-form-urlencoded;'
-                }
-              })
-            }
-
-            if (topicExists.length === 1 || createTopic.status === 200) {
-
-              let topicId
-              if (createTopic) {
-                topicId = createTopic.data.topic_id
-              } else {
-                topicId = topicExists[0].id
-              }
-
-              let setPosts = await axios.get(`${discourseHost}t/${topicId}/posts.json`, { headers: { 'User-Api-Key': userApiKey } })
-              this.$set(this, 'posts', setPosts.data.post_stream.posts)
-
-            }
-          }
-        }
-
-      } catch (error) {
-        console.log(error)
+      const documentId = this.$store.state.document.idAndRouting.id
+      let topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
+      if (topicResponse.status !== 404) {
+        this.$set(this, 'posts', topicResponse.data.topic_view_posts.post_stream.posts)
       }
     } else {
-      const discourseUrl = `${discourseHost}user-api-key/new`
+      const discourseUrl = `${this.discourseHost}user-api-key/new`
       const clientId = encodeURIComponent('bthomas')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(pemPublicKey)
@@ -193,19 +84,72 @@ export default {
     }
   },
   methods: {
-    addNewLines(str) {
-        let finalString = '';
-        while(str.length > 0) {
-            finalString += str.substring(0, 64) + '\n';
-            str = str.substring(64);
+    async createComment() {
+      const documentId = this.$store.state.document.idAndRouting.id
+      let topicResponse
+      try {
+        topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
+      } catch (err) {
+        topicResponse = err.response
+      }
+      if (topicResponse.status === 404) {
+        let category = await this.getOrCreateCategory()
+        if (category != null) {
+          let topic = {
+            raw: this.comment,
+            title: `Datashare document ${documentId.substring(0, 7)}`,
+            category: category.id.toString(),
+            archetype: "regular",
+            datashare_document_id: documentId
+          }
+          await axios.post(`${this.discourseHost}posts.json`, topic, this.axiosConfig)
         }
-        return finalString;
+      } else if (topicResponse.status === 200) {
+        await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_id}, this.axiosConfig)
+      }
+    },
+    async getOrCreateCategory() {
+      let category = this.getCategory()
+      const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
+      if (category === null) {
+        let permissions = {}
+        permissions[currentDsProject] = "1"
+        let data = {
+          name: `Datashare Documents for ${currentDsProject}`,
+          color: "BF1E2E",
+          text_color: "FFFFFF",
+          permissions: permissions
+        }
+        const axiosResponse = await axios.post(`${this.discourseHost}categories.json`, data, this.axiosConfig);
+        return axiosResponse.data
+      } else {
+        return category
+      }
+    },
+    async getCategory() {
+      const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
+      let categories = await axios.get(`${this.discourseHost}categories.json`, this.axiosConfig)
+
+      categories = categories.data.category_list.categories
+
+      let filtered = filter(categories, function (o) {
+        return ((o.name === `Datashare Documents for ${currentDsProject}`) && (o.icij_projects_for_category[0] === currentDsProject))
+      })
+      return filtered.length > 0 ? filtered[0]: null
+    },
+    addNewLines(str) {
+      let finalString = '';
+      while (str.length > 0) {
+        finalString += str.substring(0, 64) + '\n';
+        str = str.substring(64);
+      }
+      return finalString;
     },
     arrayBufferToBase64(arrayBuffer) {
       let byteArray = new Uint8Array(arrayBuffer)
       let byteString = ''
-      for(let i=0; i < byteArray.byteLength; i++) {
-          byteString += String.fromCharCode(byteArray[i])
+      for (let i = 0; i < byteArray.byteLength; i++) {
+        byteString += String.fromCharCode(byteArray[i])
       }
       return window.btoa(byteString)
     },
@@ -214,7 +158,6 @@ export default {
       return "-----BEGIN PUBLIC KEY-----\n" + b64 + "\n-----END PUBLIC KEY-----"
     }
   }
-
 }
 </script>
 
