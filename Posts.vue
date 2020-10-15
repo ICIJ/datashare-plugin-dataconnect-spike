@@ -1,5 +1,11 @@
 <template>
   <div class="posts p-3">
+    <div class="posts__actions">
+      <div class="posts__actions__form-group">
+        <textarea class="posts__actions__form-group-textarea form-control rounded-0" v-model="comment" placeholder="new comment"></textarea>
+        <button class="posts__actions__form-group__create btn btn-primary mt-3 mb-3" @click="createComment()">Create</button>
+      </div>
+    </div>
     <div v-for="post in posts" :key="post.id" class="posts__post">
       <div class="posts__post__header row">
         <div class="posts__post__header__author col-6 font-weight-bold">
@@ -23,11 +29,16 @@ export default {
   name: 'Posts',
   data () {
     return {
-      posts: []
+      posts: [],
+      comment: "",
+      topic: "",
+      category: "",
+      userApiKey: "",
+      documentId: "",
+      discourseHost: 'http://localhost:3000/'
     }
   },
   async mounted () {
-    const discourseHost = 'http://localhost:3000/'
     const re = new RegExp(/payload=(.*)#/)
     const payload = window.location.href.match(re)
     const key = "-----BEGIN RSA PRIVATE KEY-----\n" +
@@ -62,16 +73,14 @@ export default {
       const decrypt = new JSEncrypt()
       decrypt.setPrivateKey(key)
       const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
-      const userApiKey = JSON.parse(decryptedPayload).key
+
+      this.$set(this, 'userApiKey', JSON.parse(decryptedPayload).key)
+      this.$set(this, 'documentId', this.$store.state.document.idAndRouting.id)
       try {
-        const response = await axios.get(`${discourseHost}site.json`, { headers: { 'User-Api-Key': userApiKey } })
+        const response = await axios.get(`${this.discourseHost}site.json`, { headers: { 'User-Api-Key': this.userApiKey } })
         const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
 
-        let ihubProjects = response.data.groups
-
-        let projectExists = filter(ihubProjects, function(p) {
-          return p.name === currentDsProject
-        })
+        let projectExists = filter(response.data.groups, p => p.name === currentDsProject)
 
         let createProject
         if (projectExists.length === 0) {
@@ -79,44 +88,38 @@ export default {
           data.append("group[name]", currentDsProject)
           data.append("group[visibility_level]", "1")
 
-          createProject = await axios.post(`${discourseHost}admin/groups`, data, {
+          createProject = await axios.post(`${this.discourseHost}admin/groups`, data, {
             headers: {
-              'User-Api-Key': userApiKey,
+              'User-Api-Key': this.userApiKey,
               'Content-Type': 'multipart/form-data;'
             }
           })
         }
 
         if (projectExists.length === 1 || (createProject.status === 200)) {
-          let categoriesList = await axios.get(`${discourseHost}categories.json`, {
+          let categoriesList = await axios.get(`${this.discourseHost}categories.json`, {
             headers: {
-              'User-Api-Key': userApiKey
+              'User-Api-Key': this.userApiKey
             }
           })
 
           categoriesList = categoriesList.data.category_list.categories
 
           // filter for one with specific name + project permissions
-          let categoryExists = filter(categoriesList, function(o) {
-            return ((o.name === `Datashare Documents for ${currentDsProject}`) && (o.icij_projects_for_category[0] === currentDsProject))
-          })
+          let categoryExists = filter(categoriesList, c => (c.name === `Datashare Documents for ${currentDsProject}`) && (c.icij_projects_for_category[0] === currentDsProject))
 
           let createCategory
           if (categoryExists.length === 0) {
             const data = new FormData()
-            data.append("name", "Datashare Documents")
+            data.append("name", `Datashare Documents for ${currentDsProject}`)
             data.append(`permissions[${currentDsProject}]`, "1")
             data.append("color", "BF1E2E")
             data.append("text_color", "FFFFFF")
-            data.append("allow_badges", "true")
-            data.append("required_tag_group_name", "")
-            data.append("topic_featured_link_allowed", "true")
-            data.append("search_priority", "0")
 
             // if it does not exist, create it
-            createCategory = await axios.post(`${discourseHost}categories.json`, data, {
+            createCategory = await axios.post(`${this.discourseHost}categories.json`, data, {
               headers: {
-                'User-Api-Key': userApiKey,
+                'User-Api-Key': this.userApiKey,
                 'Content-Type': 'x-www-form-urlencoded;'
               }
             })
@@ -124,46 +127,35 @@ export default {
 
           if (categoryExists.length === 1 || createCategory.status === 200) {
             // get Datashare Documents category id
-            let categories = await axios.get(`${discourseHost}categories.json`, {
+            let categories = await axios.get(`${this.discourseHost}categories.json`, {
               headers: {
-                'User-Api-Key': userApiKey
+                'User-Api-Key': this.userApiKey
               }
             })
 
-            categories = categories.data.category_list.categories
+            let category = filter(categories.data.category_list.categories, c => (c.name === `Datashare Documents for ${currentDsProject}`) && (c.icij_projects_for_category[0] === currentDsProject))
+            this.$set(this, 'category', category[0].id)
 
-            let category = filter(categories, function(o) {
-              return ((o.name === "Datashare Documents") && (o.icij_projects_for_category[0] === currentDsProject))
-            })
-
-            category = category[0].id
-
-            let topics = await axios.get(`${discourseHost}c/${category}.json`, {
+            let topics = await axios.get(`${this.discourseHost}c/${this.category}.json`, {
               headers: {
-                'User-Api-Key': userApiKey
+                'User-Api-Key': this.userApiKey
               }
             })
 
-            topics = topics.data.topic_list.topics
-
-            const documentId =  this.$store.state.document.idAndRouting.id
-
-            let topicExists = filter(topics, function(o) {
-              return o.datashare_document_id === documentId
-            })
+            let topicExists = filter(topics.data.topic_list.topics, t => t.datashare_document_id === this.documentId)
 
             let createTopic
             if (topicExists.length === 0) {
               const data = new FormData()
-              data.append("raw", "trying to add a new topic from dataconnect")
-              data.append("title", `Datashare document ${documentId.substring(0,7)}`)
+              data.append("raw", "This is the start of the thread pertaining to this document.")
+              data.append("title", `Datashare document ${this.documentId.substring(0,7)}`)
               data.append("category", category.toString())
               data.append("archetype", "regular")
-              data.append("datashare_document_id", documentId)
+              data.append("datashare_document_id", this.documentId)
 
-              createTopic = await axios.post(`${discourseHost}posts.json`, data, {
+              createTopic = await axios.post(`${this.discourseHost}posts.json`, data, {
                 headers: {
-                  'User-Api-Key': userApiKey,
+                  'User-Api-Key': this.userApiKey,
                   'Content-Type': 'x-www-form-urlencoded;'
                 }
               })
@@ -171,15 +163,16 @@ export default {
 
             if (topicExists.length === 1 || createTopic.status === 200) {
 
-              let topicId
               if (createTopic) {
-                topicId = createTopic.data.topic_id
+                this.$set(this, 'topic', createTopic.data.topic_id)
               } else {
-                topicId = topicExists[0].id
+                this.$set(this, 'topic', topicExists[0].id)
               }
 
-              let setPosts = await axios.get(`${discourseHost}t/${topicId}/posts.json`, { headers: { 'User-Api-Key': userApiKey } })
-              this.$set(this, 'posts', setPosts.data.post_stream.posts)
+              let setPosts = await axios.get(`${this.discourseHost}t/${this.topic}/posts.json`, { headers: { 'User-Api-Key': this.userApiKey } })
+              if (setPosts.status === 200) {
+                this.$set(this, 'posts', setPosts.data.post_stream.posts)
+              }
 
             }
           }
@@ -189,14 +182,35 @@ export default {
         console.log(error)
       }
     } else {
-      const discourseUrl = `${discourseHost}user-api-key/new`
+      const discourseUrl = `${this.discourseHost}user-api-key/new`
       const clientId = encodeURIComponent('moleary')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(key)
       window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read,write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
     }
+  },
+  methods: {
+    async createComment () {
+      const data = new FormData()
+      data.append("raw", this.comment)
+      data.append("topic_id", this.topic.toString())
+      data.append("archetype", "regular")
+      data.append("datashare_document_id", this.documentId)
+
+      let createPost = await axios.post(`${this.discourseHost}posts.json`, data, {
+        headers: {
+          'User-Api-Key': this.userApiKey,
+          'Content-Type': 'x-www-form-urlencoded;'
+        }
+      })
+
+      if (createPost.status == 200) {
+        let setPosts = await axios.get(`${this.discourseHost}t/${this.topic}/posts.json`, { headers: { 'User-Api-Key': this.userApiKey } })
+        this.$set(this, 'posts', setPosts.data.post_stream.posts)
+        this.$set(this, 'comment', null)
+      }
+
+    }
   }
 }
 </script>
-
-<!-- this.$set(this, 'posts', response.data.post_stream.posts) -->
