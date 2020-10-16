@@ -133,7 +133,7 @@ export default {
       }
     },
     async getOrCreateCategory() {
-      let category = this.getCategory()
+      let category = await this.getCategory()
       const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
       if (category === null) {
         let permissions = {}
