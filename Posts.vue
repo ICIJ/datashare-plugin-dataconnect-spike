@@ -160,5 +160,3 @@ export default {
   }
 }
 </script>
-
-<!-- this.$set(this, 'posts', response.data.post_stream.posts) -->
