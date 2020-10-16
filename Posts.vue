@@ -105,7 +105,7 @@ export default {
           await axios.post(`${this.discourseHost}posts.json`, topic, this.axiosConfig)
         }
       } else if (topicResponse.status === 200) {
-        await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_id}, this.axiosConfig)
+        await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_view_posts.id}, this.axiosConfig)
       }
     },
     async getOrCreateCategory() {
