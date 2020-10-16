@@ -71,13 +71,22 @@ export default {
       this.$set(this, "axiosConfig", {headers: {'User-Api-Key': userApiKey}});
 
       const documentId = this.$store.state.document.idAndRouting.id
-      let topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
-      if (topicResponse.status !== 404) {
-        this.$set(this, 'posts', topicResponse.data.topic_view_posts.post_stream.posts)
+
+      let category = await this.getOrCreateCategory()
+      let topics
+      if (category != null) {
+        topics = await axios.get(`${this.discourseHost}c/${category.id}.json`, this.axiosConfig)
+      }
+      topics = topics.data.topic_list.topics
+      let topicResponse = filter(topics, t => t.datashare_document_id === documentId)
+
+      if (topicResponse.length !== 0) {
+        let setPosts = await axios.get(`${this.discourseHost}t/${topicResponse[0].id}/posts.json`, this.axiosConfig)
+        this.$set(this, 'posts', setPosts.data.post_stream.posts)
       }
     } else {
       const discourseUrl = `${this.discourseHost}user-api-key/new`
-      const clientId = encodeURIComponent('bthomas')
+      const clientId = encodeURIComponent('moleary')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(pemPublicKey)
       window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read,write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
@@ -86,14 +95,17 @@ export default {
   methods: {
     async createComment() {
       const documentId = this.$store.state.document.idAndRouting.id
-      let topicResponse
-      try {
-        topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
-      } catch (err) {
-        topicResponse = err.response
+
+      let category = await this.getOrCreateCategory()
+      let topics
+      if (category != null) {
+        topics = await axios.get(`${this.discourseHost}c/${category.id}.json`, this.axiosConfig)
       }
-      if (topicResponse.status === 404) {
-        let category = await this.getOrCreateCategory()
+      topics = topics.data.topic_list.topics
+
+      let topicResponse = filter(topics, t => t.datashare_document_id === documentId)
+
+      if (topicResponse.length === 0) {
         if (category != null) {
           let topic = {
             raw: this.comment,
@@ -102,10 +114,22 @@ export default {
             archetype: "regular",
             datashare_document_id: documentId
           }
-          await axios.post(`${this.discourseHost}posts.json`, topic, this.axiosConfig)
+          let createPost = await axios.post(`${this.discourseHost}posts.json`, topic, this.axiosConfig)
+
+          if (createPost.status == 200) {
+            let setPosts = await axios.get(`${this.discourseHost}t/${createPost.data.topic_id}/posts.json`, this.axiosConfig)
+            this.$set(this, 'posts', setPosts.data.post_stream.posts)
+            this.$set(this, 'comment', null)
+          }
         }
-      } else if (topicResponse.status === 200) {
-        await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_id}, this.axiosConfig)
+      } else {
+        let createPost = await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse[0].id}, this.axiosConfig)
+
+        if (createPost.status == 200) {
+          let setPosts = await axios.get(`${this.discourseHost}t/${topicResponse[0].id}/posts.json`, this.axiosConfig)
+          this.$set(this, 'posts', setPosts.data.post_stream.posts)
+          this.$set(this, 'comment', null)
+        }
       }
     },
     async getOrCreateCategory() {
