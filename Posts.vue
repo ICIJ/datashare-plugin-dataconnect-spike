@@ -17,6 +17,16 @@
         </div>
       </div>
       <div class="posts__post__text" v-html="post.cooked"></div>
+      <div>
+        <b-button v-b-toggle="'collapse-' + post.id" variant="primary">Edit</b-button>
+        <b-collapse id="'collapse-' + post.id" class="mt-2">
+          <b-card>
+            <textarea class="textarea form-control rounded-0" v-model="newText"
+                      placeholder="update your post here"></textarea>
+            <b-button size="sm">Update</b-button>
+          </b-card>
+        </b-collapse>
+    </div>
     </div>
   </div>
 </template>
@@ -33,7 +43,8 @@ export default {
       posts: [],
       comment: "",
       axiosConfig: null,
-      discourseHost: 'http://localhost:3000/'
+      discourseHost: 'http://localhost:3000/',
+      newText: ""
     }
   },
   async mounted() {
