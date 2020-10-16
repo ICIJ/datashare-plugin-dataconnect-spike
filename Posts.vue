@@ -9,10 +9,13 @@
     </div>
     <div v-for="post in posts" :key="post.id" class="posts__post">
       <div class="posts__post__header row">
-        <div class="posts__post__header__author col-6 font-weight-bold">
+        <div class="posts__post__header__delete p-2 col-2">
+          <fa icon="trash-alt" @click="deletePost(post.id)"></fa>
+        </div>
+        <div class="posts__post__header__author col-5 font-weight-bold">
           {{ post.username }}
         </div>
-        <div class="posts__post__header__date col-6 text-right">
+        <div class="posts__post__header__date col-5 text-right">
           {{ post.created_at }}
         </div>
       </div>
@@ -77,7 +80,7 @@ export default {
       }
     } else {
       const discourseUrl = `${this.discourseHost}user-api-key/new`
-      const clientId = encodeURIComponent('bthomas')
+      const clientId = encodeURIComponent('alhote')
       const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
       const publicKey = encodeURIComponent(pemPublicKey)
       window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read,write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
@@ -156,6 +159,9 @@ export default {
     toPem(key) {
       let b64 = this.arrayBufferToBase64(key)
       return "-----BEGIN PUBLIC KEY-----\n" + b64 + "\n-----END PUBLIC KEY-----"
+    },
+    deletePost (postId) {
+      axios.delete(`${this.discourseHost}posts/${postId}.json`, this.axiosConfig)
     }
   }
 }
