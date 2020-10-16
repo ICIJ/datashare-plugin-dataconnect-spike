@@ -4,7 +4,7 @@
       <div class="posts__actions__form-group">
         <textarea class="posts__actions__form-group-textarea form-control rounded-0" v-model="comment"
                   placeholder="new comment"></textarea>
-        <button class="posts__actions__form-group__create btn btn-primary" @click="createComment()">Create</button>
+        <button class="posts__actions__form-group__create btn btn-primary mt-2 mb-2" @click="createComment()">Create</button>
       </div>
     </div>
     <div v-for="post in posts" :key="post.id" class="posts__post">
@@ -18,12 +18,12 @@
       </div>
       <div class="posts__post__text" v-html="post.cooked"></div>
       <div>
-        <b-button v-b-toggle="'collapse-' + post.id" variant="primary">Edit</b-button>
-        <b-collapse id="'collapse-' + post.id" class="mt-2">
-          <b-card>
+        <b-button v-b-toggle="'collapse-' + post.id" class="mb-3" variant="primary">Edit</b-button>
+        <b-collapse :id="'collapse-' + post.id" class="mt-2">
+          <b-card class="border-0">
             <textarea class="textarea form-control rounded-0" v-model="newText"
                       placeholder="update your post here"></textarea>
-            <b-button size="sm">Update</b-button>
+            <b-button class="mt-2" size="sm" @click="updateComment(post)">Update</b-button>
           </b-card>
         </b-collapse>
     </div>
@@ -171,6 +171,14 @@ export default {
         return ((o.name === `Datashare Documents for ${currentDsProject}`) && (o.icij_projects_for_category[0] === currentDsProject))
       })
       return filtered.length > 0 ? filtered[0]: null
+    },
+    async updateComment(post) {
+      let response = await axios.put(`${this.discourseHost}posts/${post.id}.json`, {raw: this.newText}, this.axiosConfig)
+      if (response.status === 200) {
+        let setPosts = await axios.get(`${this.discourseHost}t/${response.data.post.topic_id}/posts.json`, this.axiosConfig)
+        this.$set(this, 'posts', setPosts.data.post_stream.posts)
+        this.$set(this, 'newText', null)
+      }
     },
     addNewLines(str) {
       let finalString = '';
