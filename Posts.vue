@@ -7,26 +7,29 @@
         <button class="posts__actions__form-group__create btn btn-primary mt-2 mb-2" @click="createComment()">Create</button>
       </div>
     </div>
-    <div v-for="post in posts" :key="post.id" class="posts__post">
-      <div class="posts__post__header row">
-        <div class="posts__post__header__author col-6 font-weight-bold">
-          {{ post.username }}
+    <div class="mt-3">
+      <div v-for="post in posts" :key="post.id" class="posts__post">
+        <div class="posts__post__header row">
+          <div class="posts__post__header__author col-6 font-weight-bold">
+            {{ post.username }}
+          </div>
+          <div class="posts__post__header__date col-6 text-right">
+            {{ post.created_at }}
+          </div>
         </div>
-        <div class="posts__post__header__date col-6 text-right">
-          {{ post.created_at }}
+        <div class="posts__post__text" v-html="post.cooked"></div>
+        <div>
+          <b-button v-b-toggle="'collapse-' + post.id" class="mb-3" variant="primary">Edit</b-button>
+          <b-button class="ml-2 mb-3" variant="primary" @click="deletePost(post)">Delete</b-button>
+          <b-collapse :id="'collapse-' + post.id" class="mt-2">
+            <b-card class="border-0">
+              <textarea class="textarea form-control rounded-0" :id="'text-' + post.id" v-model="post.cooked"
+                        placeholder="update your post here"></textarea>
+              <b-button class="mt-2" size="sm" @click="updatePost(post)">Update</b-button>
+            </b-card>
+          </b-collapse>
         </div>
       </div>
-      <div class="posts__post__text" v-html="post.cooked"></div>
-      <div>
-        <b-button v-b-toggle="'collapse-' + post.id" class="mb-3" variant="primary">Edit</b-button>
-        <b-collapse :id="'collapse-' + post.id" class="mt-2">
-          <b-card class="border-0">
-            <textarea class="textarea form-control rounded-0" v-model="post.cooked"
-                      placeholder="update your post here"></textarea>
-            <b-button class="mt-2" size="sm" @click="updateComment(post)">Update</b-button>
-          </b-card>
-        </b-collapse>
-    </div>
     </div>
   </div>
 </template>
@@ -34,7 +37,7 @@
 <script>
 import filter from 'lodash/filter'
 import axios from 'axios'
-import { JSEncrypt } from 'jsencrypt'
+import {JSEncrypt} from 'jsencrypt'
 
 export default {
   name: 'Posts',
@@ -143,7 +146,7 @@ export default {
       }
     },
     async getOrCreateCategory() {
-      let category = await this.getCategory()
+      let category = this.getCategory()
       const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
       if (category === null) {
         let permissions = {}
@@ -171,12 +174,15 @@ export default {
       })
       return filtered.length > 0 ? filtered[0]: null
     },
-    async updateComment(post) {
+    async updatePost(post) {
       let response = await axios.put(`${this.discourseHost}posts/${post.id}.json`, {raw: post.cooked}, this.axiosConfig)
       if (response.status === 200) {
         let setPosts = await axios.get(`${this.discourseHost}t/${response.data.post.topic_id}/posts.json`, this.axiosConfig)
         this.$set(this, 'posts', setPosts.data.post_stream.posts)
       }
+    },
+    deletePost(post) {
+      axios.delete(`${this.discourseHost}posts/${post.id}.json`, this.axiosConfig)
     },
     addNewLines(str) {
       let finalString = '';
