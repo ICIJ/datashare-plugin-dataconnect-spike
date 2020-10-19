@@ -21,7 +21,7 @@
         <b-button v-b-toggle="'collapse-' + post.id" class="mb-3" variant="primary">Edit</b-button>
         <b-collapse :id="'collapse-' + post.id" class="mt-2">
           <b-card class="border-0">
-            <textarea class="textarea form-control rounded-0" v-model="newText"
+            <textarea class="textarea form-control rounded-0" v-model="post.cooked"
                       placeholder="update your post here"></textarea>
             <b-button class="mt-2" size="sm" @click="updateComment(post)">Update</b-button>
           </b-card>
@@ -34,7 +34,7 @@
 <script>
 import filter from 'lodash/filter'
 import axios from 'axios'
-import {JSEncrypt} from 'jsencrypt'
+import { JSEncrypt } from 'jsencrypt'
 
 export default {
   name: 'Posts',
@@ -43,8 +43,7 @@ export default {
       posts: [],
       comment: "",
       axiosConfig: null,
-      discourseHost: 'http://localhost:3000/',
-      newText: ""
+      discourseHost: 'http://localhost:3000/'
     }
   },
   async mounted() {
@@ -173,11 +172,10 @@ export default {
       return filtered.length > 0 ? filtered[0]: null
     },
     async updateComment(post) {
-      let response = await axios.put(`${this.discourseHost}posts/${post.id}.json`, {raw: this.newText}, this.axiosConfig)
+      let response = await axios.put(`${this.discourseHost}posts/${post.id}.json`, {raw: post.cooked}, this.axiosConfig)
       if (response.status === 200) {
         let setPosts = await axios.get(`${this.discourseHost}t/${response.data.post.topic_id}/posts.json`, this.axiosConfig)
         this.$set(this, 'posts', setPosts.data.post_stream.posts)
-        this.$set(this, 'newText', null)
       }
     },
     addNewLines(str) {
