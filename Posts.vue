@@ -37,7 +37,7 @@
 <script>
 import filter from 'lodash/filter'
 import axios from 'axios'
-import {JSEncrypt} from 'jsencrypt'
+import { JSEncrypt } from 'jsencrypt'
 
 export default {
   name: 'Posts',
@@ -146,7 +146,7 @@ export default {
       }
     },
     async getOrCreateCategory() {
-      let category = this.getCategory()
+      let category = await this.getCategory()
       const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
       if (category === null) {
         let permissions = {}
