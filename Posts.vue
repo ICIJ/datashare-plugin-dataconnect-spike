@@ -27,7 +27,6 @@
 <script>
 import filter from 'lodash/filter'
 import axios from 'axios'
-import {JSEncrypt} from 'jsencrypt'
 
 export default {
   name: 'Posts',
@@ -36,54 +35,15 @@ export default {
       posts: [],
       comment: "",
       axiosConfig: null,
-      discourseHost: 'http://localhost:3000/'
+      discourseHost: 'http://localhost:8888/api/proxy'
     }
   },
   async mounted() {
-    const re = new RegExp(/payload=(.*)#/)
-    const payload = window.location.href.match(re)
-
-    let pemPrivateKey = window.localStorage.getItem("RSAPrivateKey")
-    let pemPublicKey = window.localStorage.getItem("RSAPublicKey")
-    if (pemPrivateKey === null || pemPublicKey === null) {
-      const keyPair = await window.crypto.subtle.generateKey(
-          {
-            name: "RSA-OAEP",
-            modulusLength: 1024,
-            publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-            hash: {name: "SHA-256"}
-          },
-          true,
-          ["encrypt", "decrypt"]
-      )
-      let exportedPublicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey)
-      let exportedPrivateKey = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
-      let privateKeyBody = this.addNewLines(this.arrayBufferToBase64(exportedPrivateKey));
-      pemPrivateKey = `-----BEGIN PRIVATE KEY-----\n${privateKeyBody}-----END PRIVATE KEY-----`
-      pemPublicKey = this.toPem(exportedPublicKey)
-      window.localStorage.setItem("RSAPrivateKey", pemPrivateKey)
-      window.localStorage.setItem("RSAPublicKey", pemPublicKey)
-    }
-
-    if (payload) {
-      const urlDecodedPayload = decodeURIComponent(payload[1])
-      const decrypt = new JSEncrypt()
-      decrypt.setPrivateKey(pemPrivateKey)
-      const decryptedPayload = decrypt.decrypt(urlDecodedPayload)
-      const userApiKey = JSON.parse(decryptedPayload).key
-      this.$set(this, "axiosConfig", {headers: {'User-Api-Key': userApiKey}});
-
-      const documentId = this.$store.state.document.idAndRouting.id
-      let topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
-      if (topicResponse.status !== 404) {
-        this.$set(this, 'posts', topicResponse.data.topic_view_posts.post_stream.posts)
-      }
-    } else {
-      const discourseUrl = `${this.discourseHost}user-api-key/new`
-      const clientId = encodeURIComponent('alhote')
-      const authRedirect = encodeURIComponent([window.location.protocol, '//', window.location.host, '/#', this.$router.currentRoute.fullPath].join(''))
-      const publicKey = encodeURIComponent(pemPublicKey)
-      window.location.href = `${discourseUrl}?application_name=dataconnect&client_id=${clientId}&scopes=read,write&nonce=bar&auth_redirect=${authRedirect}&public_key=${publicKey}`
+    const documentId = this.$store.state.document.idAndRouting.id
+    const project = this.$store.state.search.index
+    let topicResponse = await axios.get(`${this.discourseHost}/${project}/custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
+    if (topicResponse.status !== 404) {
+      this.$set(this, 'posts', topicResponse.data.topic_view_posts.post_stream.posts)
     }
   },
   methods: {
