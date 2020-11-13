@@ -34,14 +34,13 @@ export default {
     return {
       posts: [],
       comment: "",
-      axiosConfig: null,
       discourseHost: 'http://localhost:8888/api/proxy'
     }
   },
   async mounted() {
     const documentId = this.$store.state.document.idAndRouting.id
     const project = this.$store.state.search.index
-    let topicResponse = await axios.get(`${this.discourseHost}/${project}/custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
+    let topicResponse = await axios.get(`${this.discourseHost}/${project}/custom-fields-api/topics/${documentId}.json`)
     if (topicResponse.status !== 404) {
       this.$set(this, 'posts', topicResponse.data.topic_view_posts.post_stream.posts)
     }
@@ -49,9 +48,10 @@ export default {
   methods: {
     async createComment() {
       const documentId = this.$store.state.document.idAndRouting.id
+      const project = this.$store.state.search.index
       let topicResponse
       try {
-        topicResponse = await axios.get(`${this.discourseHost}custom-fields-api/topics/${documentId}.json`, this.axiosConfig)
+        topicResponse = await axios.get(`${this.discourseHost}/${project}/custom-fields-api/topics/${documentId}.json`)
       } catch (err) {
         topicResponse = err.response
       }
@@ -65,15 +65,15 @@ export default {
             archetype: "regular",
             datashare_document_id: documentId
           }
-          await axios.post(`${this.discourseHost}posts.json`, topic, this.axiosConfig)
+          await axios.post(`${this.discourseHost}/posts.json`, topic)
         }
       } else if (topicResponse.status === 200) {
-        await axios.post(`${this.discourseHost}posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_view_posts.id}, this.axiosConfig)
+        await axios.post(`${this.discourseHost}/${project}/posts.json`, {raw: this.comment, topic_id: topicResponse.data.topic_view_posts.id, skip_validations: "true"})
       }
     },
     async getOrCreateCategory() {
       let category = await this.getCategory()
-      const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
+      const currentDsProject = this.$store.state.search.index
       if (category === null) {
         let permissions = {}
         permissions[currentDsProject] = "1"
@@ -83,15 +83,15 @@ export default {
           text_color: "FFFFFF",
           permissions: permissions
         }
-        const axiosResponse = await axios.post(`${this.discourseHost}categories.json`, data, this.axiosConfig);
+        const axiosResponse = await axios.post(`${this.discourseHost}/${currentDsProject}/categories.json`, data);
         return axiosResponse.data
       } else {
         return category
       }
     },
     async getCategory() {
-      const currentDsProject = this.$store.state.search.index.replace(/-/g, '_')
-      let categories = await axios.get(`${this.discourseHost}categories.json`, this.axiosConfig)
+      const currentDsProject = this.$store.state.search.index
+      let categories = await axios.get(`${this.discourseHost}/${currentDsProject}/categories.json`)
 
       categories = categories.data.category_list.categories
 
@@ -121,7 +121,7 @@ export default {
       return "-----BEGIN PUBLIC KEY-----\n" + b64 + "\n-----END PUBLIC KEY-----"
     },
     deletePost (postId) {
-      axios.delete(`${this.discourseHost}posts/${postId}.json`, this.axiosConfig)
+      axios.delete(`${this.discourseHost}/posts/${postId}.json`)
     }
   }
 }
